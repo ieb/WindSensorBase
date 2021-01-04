@@ -1,0 +1,206 @@
+EESchema Schematic File Version 2
+LIBS:power
+LIBS:device
+LIBS:transistors
+LIBS:conn
+LIBS:linear
+LIBS:regul
+LIBS:74xx
+LIBS:cmos4000
+LIBS:adc-dac
+LIBS:memory
+LIBS:xilinx
+LIBS:microcontrollers
+LIBS:dsp
+LIBS:microchip
+LIBS:analog_switches
+LIBS:motorola
+LIBS:texas
+LIBS:intel
+LIBS:audio
+LIBS:interface
+LIBS:digital-audio
+LIBS:philips
+LIBS:display
+LIBS:cypress
+LIBS:siliconi
+LIBS:opto
+LIBS:atmel
+LIBS:contrib
+LIBS:valves
+LIBS:winddev
+EELAYER 25 0
+EELAYER END
+$Descr A4 11693 8268
+encoding utf-8
+Sheet 1 1
+Title ""
+Date ""
+Rev ""
+Comp ""
+Comment1 ""
+Comment2 ""
+Comment3 ""
+Comment4 ""
+$EndDescr
+$Comp
+L ESP32Dev U?
+U 1 1 5FEC51EF
+P 5600 3850
+F 0 "U?" H 5500 3500 60  0000 C CNN
+F 1 "ESP32Dev" H 5500 3500 60  0000 C CNN
+F 2 "" H 5500 3500 60  0001 C CNN
+F 3 "" H 5500 3500 60  0001 C CNN
+	1    5600 3850
+	1    0    0    -1  
+$EndComp
+$Comp
+L JDY40 U?
+U 1 1 5FEC5227
+P 2050 2450
+F 0 "U?" H 2100 2300 60  0000 C CNN
+F 1 "JDY40" H 2100 2450 60  0000 C CNN
+F 2 "" H 1900 2400 60  0001 C CNN
+F 3 "" H 1900 2400 60  0001 C CNN
+	1    2050 2450
+	1    0    0    -1  
+$EndComp
+$Comp
+L MCP2562FD IC?
+U 1 1 5FEC5253
+P 2000 3800
+F 0 "IC?" H 1750 4100 40  0000 C CNN
+F 1 "MCP2562FD" H 2250 3500 40  0000 C CNN
+F 2 "DIP8" H 2000 3800 35  0000 C CIN
+F 3 "" H 2000 3800 60  0000 C CNN
+	1    2000 3800
+	1    0    0    -1  
+$EndComp
+$Comp
+L DCDCConverter U?
+U 1 1 5FEC529B
+P 2250 6650
+F 0 "U?" H 2250 6650 60  0000 C CNN
+F 1 "DCDCConverter" H 2250 6650 60  0000 C CNN
+F 2 "" H 2250 6650 60  0001 C CNN
+F 3 "" H 2250 6650 60  0001 C CNN
+	1    2250 6650
+	1    0    0    -1  
+$EndComp
+$Comp
+L CONN_1 P?
+U 1 1 5FEC52C2
+P 750 6350
+F 0 "P?" H 830 6350 40  0000 L CNN
+F 1 "CONN_1" H 750 6405 30  0001 C CNN
+F 2 "" H 750 6350 60  0001 C CNN
+F 3 "" H 750 6350 60  0001 C CNN
+	1    750  6350
+	-1   0    0    1   
+$EndComp
+$Comp
+L CONN_1 P?
+U 1 1 5FEC52FF
+P 750 6950
+F 0 "P?" H 830 6950 40  0000 L CNN
+F 1 "CONN_1" H 750 7005 30  0001 C CNN
+F 2 "" H 750 6950 60  0001 C CNN
+F 3 "" H 750 6950 60  0001 C CNN
+	1    750  6950
+	-1   0    0    1   
+$EndComp
+Text GLabel 3350 6350 2    60   Output ~ 0
+5v
+$Comp
+L GND #PWR?
+U 1 1 5FEC5350
+P 3350 7150
+F 0 "#PWR?" H 3350 7150 30  0001 C CNN
+F 1 "GND" H 3350 7080 30  0001 C CNN
+F 2 "" H 3350 7150 60  0001 C CNN
+F 3 "" H 3350 7150 60  0001 C CNN
+	1    3350 7150
+	1    0    0    -1  
+$EndComp
+$Comp
+L GND #PWR?
+U 1 1 5FEC5374
+P 3300 5050
+F 0 "#PWR?" H 3300 5050 30  0001 C CNN
+F 1 "GND" H 3300 4980 30  0001 C CNN
+F 2 "" H 3300 5050 60  0001 C CNN
+F 3 "" H 3300 5050 60  0001 C CNN
+	1    3300 5050
+	1    0    0    -1  
+$EndComp
+$Comp
+L GND #PWR?
+U 1 1 5FEC5391
+P 7900 5050
+F 0 "#PWR?" H 7900 5050 30  0001 C CNN
+F 1 "GND" H 7900 4980 30  0001 C CNN
+F 2 "" H 7900 5050 60  0001 C CNN
+F 3 "" H 7900 5050 60  0001 C CNN
+	1    7900 5050
+	1    0    0    -1  
+$EndComp
+Text GLabel 3100 5150 0    60   Input ~ 0
+5v
+Text GLabel 8100 5150 2    60   Output ~ 0
+3v3
+Text GLabel 2950 2700 2    60   Input ~ 0
+3v3
+Text GLabel 1050 3850 0    60   Input ~ 0
+3v3
+Wire Wire Line
+	900  6950 1500 6950
+Wire Wire Line
+	2950 6950 3350 6950
+Wire Wire Line
+	3350 6950 3350 7150
+Wire Wire Line
+	2950 6350 3350 6350
+$Comp
+L GND #PWR?
+U 1 1 5FEC54FF
+P 1300 7200
+F 0 "#PWR?" H 1300 7200 30  0001 C CNN
+F 1 "GND" H 1300 7130 30  0001 C CNN
+F 2 "" H 1300 7200 60  0001 C CNN
+F 3 "" H 1300 7200 60  0001 C CNN
+	1    1300 7200
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	1300 7200 1300 6950
+Connection ~ 1300 6950
+$Comp
+L DIODE D?
+U 1 1 5FEC5550
+P 1200 6350
+F 0 "D?" H 1200 6450 40  0000 C CNN
+F 1 "DIODE" H 1200 6250 40  0000 C CNN
+F 2 "" H 1200 6350 60  0000 C CNN
+F 3 "" H 1200 6350 60  0000 C CNN
+	1    1200 6350
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	900  6350 1000 6350
+Wire Wire Line
+	1400 6350 1500 6350
+Wire Wire Line
+	3100 5150 3800 5150
+Wire Wire Line
+	3300 5050 3300 4950
+Wire Wire Line
+	3300 4950 3800 4950
+Wire Wire Line
+	7500 5150 8100 5150
+Wire Wire Line
+	7500 4950 7900 4950
+Wire Wire Line
+	7900 4950 7900 5050
+Wire Wire Line
+	1050 3850 1550 3850
+$EndSCHEMATC
