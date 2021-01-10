@@ -1,20 +1,17 @@
+#include "../testsupport.h"
 #include <windsensor.h>
-#include <unity.h>
-#include <iostream>
 
 
 
 using namespace fakeit;
 
-Serial_* debug = ArduinoFakeMock(Serial);
+Stream* debug = ArduinoFakeMock(Stream);
+
 void setUp(void) {
     ArduinoFakeReset();
-    When(OverloadedMethod(ArduinoFake(Serial), print, size_t(const char *))).AlwaysReturn();
-    When(OverloadedMethod(ArduinoFake(Serial), println, size_t(const char *))).AlwaysReturn();
-    When(OverloadedMethod(ArduinoFake(Serial), print, size_t(char))).AlwaysReturn();
-    When(OverloadedMethod(ArduinoFake(Serial), println, size_t(char))).AlwaysReturn();
-    When(OverloadedMethod(ArduinoFake(Serial), println, size_t(int, int))).AlwaysReturn();
+    setupStream();
     When(Method(ArduinoFake(), millis)).Return(1001,1002,1003,1004);
+    std::cout << "Setup done" << std::endl; 
 }
 
 
