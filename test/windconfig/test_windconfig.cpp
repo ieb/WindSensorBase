@@ -33,30 +33,30 @@ void test_dump() {
 }
 
 void test_angle_max() {
-    TEST_ASSERT_EQUAL_INT(4096,windConfig->maxAngle);
+    TEST_ASSERT_EQUAL_INT(4096,windConfig->config->maxAngle);
     MockStreamLoader loader;
     loader.load("angle max 3096\n");
     windConfig->process();
-    TEST_ASSERT_EQUAL_INT(3096,windConfig->maxAngle);
+    TEST_ASSERT_EQUAL_INT(3096,windConfig->config->maxAngle);
 
 }
 void test_angle_correction() {
-    TEST_ASSERT_EQUAL_INT(0,windConfig->angleCorrection);
+    TEST_ASSERT_EQUAL_INT(0,windConfig->config->angleCorrection);
     MockStreamLoader loader;
     loader.load("angle correction 15\n");
     windConfig->process();
-    TEST_ASSERT_EQUAL_INT(15,windConfig->angleCorrection);
+    TEST_ASSERT_EQUAL_INT(15,windConfig->config->angleCorrection);
     loader.load("ac -2596\n");
     windConfig->process();
-    TEST_ASSERT_EQUAL_INT(-2596,windConfig->angleCorrection);
+    TEST_ASSERT_EQUAL_INT(-2596,windConfig->config->angleCorrection);
 
 }
 void test_angle_direction() {
-    TEST_ASSERT_EQUAL_INT(1,windConfig->signCorrection);
+    TEST_ASSERT_EQUAL_INT(1,windConfig->config->signCorrection);
     MockStreamLoader loader;
     loader.load("angle dir 0\n");
     windConfig->process();
-    TEST_ASSERT_EQUAL_INT(-1,windConfig->signCorrection);
+    TEST_ASSERT_EQUAL_INT(-1,windConfig->config->signCorrection);
     loader.load("angle dir 1\n");
     windConfig->process();
 }
@@ -73,9 +73,9 @@ void test_angle_configuration() {
     windConfig->process(); 
     loader.load("angles 30,130,31,131,32,132,33,133,34,134,35,135\n");
     windConfig->process(); 
-    TEST_ASSERT_EQUAL_INT(36,windConfig->angleTableSize);
+    TEST_ASSERT_EQUAL_INT(36,windConfig->config->angleTableSize);
     for (int i = 0; i < 36; i++) {
-        TEST_ASSERT_EQUAL_INT16(i+100,windConfig->angleTable[i]);
+        TEST_ASSERT_EQUAL_INT16(i+100,windConfig->config->angleTable[i]);
     }
 }
 
@@ -87,12 +87,18 @@ void test_speed_configuration() {
     windConfig->process(); 
     loader.load("speed values 0,1.5,2.5,4.6,6.7\n");
     windConfig->process(); 
-    TEST_ASSERT_EQUAL_INT(5,windConfig->speedTableSize);
+    TEST_ASSERT_EQUAL_INT(5,windConfig->config->speedTableSize);
     double speedTable[] = {0,5.5,20.5,40.6,45.6};
     double speed[] = {0,1.5,2.5,4.6,6.7};
     for (int i = 0; i < 5; i++ ) {
-        TEST_ASSERT_TRUE(speedTable[i] == windConfig->speedTable[i]);
-        TEST_ASSERT_TRUE(speed[i] == windConfig->speed[i]);
+        if ( fabs(speedTable[i]-windConfig->config->speedTable[i]) > 0.001 || fabs(speed[i]-windConfig->config->speed[i]) > 0.001 ) {
+        std::cout << "FAIL" << i << "," << speedTable[i]  << "," << speed[i] << std::endl;
+        std::cout << "FAIL" << i << "," << windConfig->config->speedTable[i]  << "," << windConfig->config->speed[i] << std::endl;
+        std::cout << "FAIL" << i << "," << speedTable[i]-windConfig->config->speedTable[i]  << "," << speed[i]-windConfig->config->speed[i] << std::endl;
+
+        }
+        TEST_ASSERT_TRUE(fabs(speedTable[i]-windConfig->config->speedTable[i]) < 0.001);
+        TEST_ASSERT_TRUE(fabs(speed[i]-windConfig->config->speed[i]) < 0.001);
     }
 }
 

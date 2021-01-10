@@ -5,10 +5,8 @@
 WindConfig::WindConfig(WindSensor * _windSensor, Stream * _io) {
     io = _io;
     windSensor = _windSensor;
-    maxAngle = 4096;
-    angleCorrection = 0;
-    signCorrection = 1;
-
+    config = &(configBlob.config);
+    memcpy(config, &defaultWindSensorConfig, sizeof(WindSensorConfig));
     load();
 }
 
@@ -35,24 +33,24 @@ void WindConfig::dump(const char * command) {
     if ( strncmp( command, "dump", 4) == 0 ) {
         char buffer[80];
         if ( strlen(command) == 4 ) {
-            sprintf(buffer,"Angle Max %d", maxAngle);
+            sprintf(buffer,"Angle Max %d", config->maxAngle);
             io->println(buffer);
-            sprintf(buffer,"Angle Correction %d",angleCorrection);
+            sprintf(buffer,"Angle Correction %d", config->angleCorrection);
             io->println(buffer);
-            sprintf(buffer,"Angle Direction %s", signCorrection==1?"normal":"reversed");
+            sprintf(buffer,"Angle Direction %s", config->signCorrection==1?"normal":"reversed");
             io->println(buffer);
         }
         if ( strlen(command) == 4 || strncmp( command, "dump angles", 11) == 0 ) {
             io->println("Angle Linerisation: angle, reading, offset");
-            for (int i = 0; i < angleTableSize; i++) {
-                sprintf(buffer," %f,%d,%d", 360.0*(double)i/(double)angleTableSize, 4096*i/angleTableSize, angleTable[i]);
+            for (int i = 0; i < config->angleTableSize; i++) {
+                sprintf(buffer," %f,%d,%d", 360.0*(double)i/(double)config->angleTableSize, 4096*i/config->angleTableSize, config->angleTable[i]);
                 io->println(buffer);
             }
         }
         if ( strlen(command) == 4 || strncmp( command, "dump speed", 10) == 0 ) {
             io->println("Speed Table: Pulse Hz, m/s");
-            for (int i = 0; i < speedTableSize; i++) {
-                sprintf(buffer," %f,%f", speedTable[i], speed[i]);
+            for (int i = 0; i < config->speedTableSize; i++) {
+                sprintf(buffer," %f,%f", config->speedTable[i], config->speed[i]);
                 io->println(buffer);
             }
         }
@@ -68,9 +66,9 @@ void WindConfig::setAngleMax(const char * command) {
         data = &command[3];
     } 
     if ( data != NULL ) {
-        maxAngle = atoi(data);
+        config->maxAngle = atoi(data);
         io->print("Angle Sensor raw readings now 0-");
-        io->println(maxAngle);
+        io->println(config->maxAngle);
     }
 }
 
@@ -82,9 +80,9 @@ void WindConfig::setAngleOffset(const char * command) {
         data = &command[3];
     } 
     if ( data != NULL ) {
-        angleCorrection = atoi(data);
+        config->angleCorrection = atoi(data);
         io->print("Angle Sensor raw readings correction now ");
-        io->println(angleCorrection);
+        io->println(config->angleCorrection);
     }
 }
 
@@ -96,12 +94,12 @@ void WindConfig::setAngleDirection(const char * command) {
         data = &command[3];
     } 
     if ( data != NULL ) {
-        signCorrection = atoi(data);
-        if (signCorrection > 0) {
-            signCorrection = 1;
+        config->signCorrection = atoi(data);
+        if (config->signCorrection > 0) {
+            config->signCorrection = 1;
             io->println("Sensor direction now normal");            
         } else {
-            signCorrection = -1;
+            config->signCorrection = -1;
             io->println("Sensor direction now reversed");            
         }
     }
@@ -115,15 +113,15 @@ void WindConfig::setAngleSize(const char * command) {
         data = &command[3];
     } 
     if ( data != NULL ) {
-        angleTableSize = atoi(data);
-        if (angleTableSize >  MAX_ANGLETABLE) {
-            angleTableSize = MAX_ANGLETABLE;
+        config->angleTableSize = atoi(data);
+        if (config->angleTableSize >  MAX_ANGLETABLE) {
+            config->angleTableSize = MAX_ANGLETABLE;
         }
-        for(int i = 0; i < angleTableSize; i++) {
-            angleTable[i] = 0;
+        for(int i = 0; i < config->angleTableSize; i++) {
+            config->angleTable[i] = 0;
         }
         io->print("Angle Table cleared to   ");
-        io->println(angleTableSize);
+        io->println(config->angleTableSize);
     }
     io->println("Done set angle table");
 
@@ -149,8 +147,8 @@ void WindConfig::setAngles(const char * command) {
             if ( pend != NULL ) {
                 if ( cell == -1 ) {
                     cell = i;
-                } else if ( cell >= 0 && cell < angleTableSize) {
-                    angleTable[cell] = i;
+                } else if ( cell >= 0 && cell < config->angleTableSize) {
+                    config->angleTable[cell] = i;
                     cell = -1;
                 } else {
                     cell = -1;
@@ -171,7 +169,7 @@ void WindConfig::setSpeedTable(const char * command) {
         data = &command[3];
     } 
     if ( data != NULL ) {
-        speedTableSize = loadDoubleTable(data, MAX_SPEEDTABLE, speedTable);
+        config->speedTableSize = loadFloatTable(data, MAX_SPEEDTABLE, config->speedTable);
         io->println("Updated Speed Table");
     }
 }
@@ -184,7 +182,7 @@ void WindConfig::setSpeedValues(const char * command) {
         data = &command[3];
     } 
     if ( data != NULL ) {
-        loadDoubleTable(data, speedTableSize, speed);
+        loadFloatTable(data, config->speedTableSize, config->speed);
         io->println("Updated Speed Values");
     }
 
@@ -193,26 +191,24 @@ void WindConfig::setSpeedValues(const char * command) {
 void WindConfig::save(const char * command) {
     if ( strncmp(command, "save", 4) == 0 ) {
         io->println("Do save to flash");
-        windSensor->windAngleCalibration(maxAngle, angleCorrection, signCorrection, angleTableSize, angleTable);
-        windSensor->windSpeedCalibration(speedTableSize, speedTable, speed);
+        windSensor->calibrate(config);
     }
 }
 
 void WindConfig::load() {
     // load from flash
     io->println("Do load");
-    windSensor->windAngleCalibration(maxAngle, angleCorrection, signCorrection, angleTableSize, angleTable);
-    windSensor->windSpeedCalibration(speedTableSize, speedTable, speed);
+    windSensor->calibrate(config);
 }
 
 
-int WindConfig::loadDoubleTable(const char * data, int size, double * table) {
+int WindConfig::loadFloatTable(const char * data, int size, float * table) {
     const char * pstart = data;
     char * pend = NULL;
     int n = 0;
     while(n < size && pstart != NULL && *pstart != '\0') {
         pend = NULL;
-        double d = strtod(pstart, &(pend));
+        float d = strtof(pstart, &(pend));
         if ( *pend == ',') {
             pend++;
         }

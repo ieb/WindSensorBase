@@ -13,72 +13,41 @@
 #define unitout(x) 
 #endif
 
+#define MAX_ANGLETABLE 72
+#define MAX_SPEEDTABLE 10
 
+struct WindSensorConfig { // 231 bytes, must fit into flash
+    uint16_t maxAngle;  // 2
+    int16_t angleCorrection; // 2
+    int8_t signCorrection; // 1
+    int8_t angleTableSize; // 1
+    int8_t speedTableSize; // 1
+    int16_t angleTable[MAX_ANGLETABLE]; // 72*2 
+    float speedTable[MAX_SPEEDTABLE]; // 10*4
+    float speed[MAX_SPEEDTABLE]; // 10*4
+};
+
+extern WindSensorConfig defaultWindSensorConfig;
 
 
 class WindSensor {
     public:
       WindSensor(Stream * _debug = &Serial);
-      void windAngleCalibration(int16_t maxAngle, 
-         int16_t angleCorrecton, 
-         int16_t signCorrection, 
-         int16_t nlinearisations, 
-         const int16_t *linearisation);
-      void windSpeedCalibration(int16_t _windSpeedTableSize, 
-          double * _windSpeedTable,
-          double * _transformedSpeed);
+      void calibrate(WindSensorConfig * config);
       bool processData(char *inputLine);
-      double getWindSpeed();
-      double getWindAngle();
-      double updateWindAngle(int angle);
-      double updateWindSpeed(double windSpeed);
+      float getWindSpeed();
+      float getWindAngle();
+      float updateWindAngle(int angle);
+      float updateWindSpeed(float windSpeed);
 
       int getErrors();
     private:
         int csvParse(char * inputLine, uint16_t len, char * elements[]);
-        double windSpeedMS;
-        double windAngleRad;
+        float windSpeedMS;
+        float windAngleRad;
         int errors;
+        WindSensorConfig *config;
         Stream * debugStream;
-        /**
-         * maximum angle reading, assuming that the minimum is 0.
-         */ 
-        int16_t maxAngle;
-        /**
-         * Number of linearisations.
-         */ 
-        int16_t nlinearisations;
-        /**
-         * histeresis curve containing offsets to linearise the angular reading, 
-         * must be nlinearisations + 1 long and each reading distributed evenly round 360 degrees.
-         * raw angle units
-         */ 
-        const int16_t *linearisation; 
-        /**
-         * rotational angle correction added to the linerarised reading to rotate it to the boat, raw angle units.
-         */ 
-        int16_t angleCorrection;
-        /**
-         *  correct any rotational direction, should be -1 or 1.
-         */ 
-        int16_t signCorrection;  
-        /**
-         * Number of entries in the wind speed calibration table.
-         */
-        int16_t windSpeedTableSize;
-        /**
-         * Wind speed caliration table, in Hz ordered ascending and indicating the Hz at which the same index in the other
-         * correction arrays represents.
-         */
-        double * windSpeedTable;
-
-        /**
-         * The corresponding transformed speeds in m/s
-         * as a minimum this requies 2 elements 0, and the first measuring point.
-         */ 
-        double * transformedSpeed;
-
-
 };
 
 
