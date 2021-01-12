@@ -17,6 +17,7 @@
 
 #include <jdy40.h>
 #include <windsensor.h>
+#include <windconfig.h>
 
 
 
@@ -24,6 +25,7 @@ const unsigned long TransmitMessages[] PROGMEM={130306L,0};
 
 Jdy40 * jdy40;
 WindSensor * windSensor;
+WindConfig * windConfig;
 
 
 void setup() {
@@ -38,11 +40,16 @@ void setup() {
   jdy40 = new Jdy40(DATAEN_PIN, 9600, &Serial1, &Serial);
   jdy40->startConfig();
   jdy40->init();
+  // Since this device will only perform bridging for 
+  // a wind sensor, and there is only 1 wind sensor
+  // onboard, we have not provided a configuration mechanism for this.
+  //
   jdy40->setRFID("1021");
   jdy40->setDeviceID("1123");
   jdy40->setChannel("001");
 
   windSensor = new WindSensor();
+  windConfig = new WindConfig(windSensor,&Serial);
 
   // Setup NMEA2000
   // Set Product information

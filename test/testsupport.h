@@ -80,3 +80,34 @@ void setupStream() {
             return 0;
         });
 }
+
+#define NVS_READWRITE 1
+#define ESP_OK 1
+#define ESP_ERR_NVS_NOT_FOUND 2
+#define ESP_ERR_NVS_NO_FREE_PAGES 3
+#define ESP_ERR_NVS_NEW_VERSION_FOUND 4
+typedef int32_t nvs_handle_t;
+typedef int32_t esp_err_t;
+
+
+int32_t nvs_flash_init(void) {
+    return ESP_OK;
+}
+int32_t nvs_flash_erase(void) {
+    return ESP_OK;
+}
+int32_t nvs_open(const char * storage_namespace, int flags, nvs_handle_t *my_handle) {
+    return ESP_OK;
+}
+int32_t nvs_set_blob(nvs_handle_t my_handle, const char *key, void * data, size_t len) {
+    return ESP_OK;
+}
+int32_t nvs_commit(nvs_handle_t my_handle) {
+    return ESP_OK;
+}
+int32_t nvs_close(nvs_handle_t my_handle) {
+    return ESP_OK;
+}
+int32_t nvs_get_blob(nvs_handle_t my_handle, const char *key, void * data, size_t * len) {
+    return ESP_OK;
+}
