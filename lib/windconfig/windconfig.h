@@ -25,6 +25,7 @@ union ConfigBlob {
 class WindConfig {
     public:
         WindConfig(WindSensor * windSensor, Stream * _io = &Serial);
+        void begin(void);
         void process();
         bool isOutputEnabled();
         ConfigBlob configBlob;

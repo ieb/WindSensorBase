@@ -27,38 +27,62 @@ int32_t config::initStorage() {
 }
 
 int32_t config::writeStorage(const char * storage_namespace, const char * key, void *data, size_t len) {
-    nvs_handle_t my_handle;
+    nvs_handle my_handle;
     int32_t err;
     err = config::initStorage();
-    if (err != ESP_OK) return err;
+    if (err != ESP_OK) {
+        Serial.println("InitStorage Failed");
+        return err;
+    }
     err = nvs_open(storage_namespace, NVS_READWRITE, &my_handle);
-    if (err != ESP_OK) return err;
+    if (err != ESP_OK ) {
+        Serial.println("nvs_open Failed");
+        return err;
+    }
     err = nvs_set_blob(my_handle, key, data, len);
-    if (err != ESP_OK) return err;
+    if (err != ESP_OK ) {
+        Serial.println("nvs_set_blob Failed");
+        return err;
+    }
     err = nvs_commit(my_handle);
-    if (err != ESP_OK) return err;
+    if (err != ESP_OK ) {
+        Serial.println("nvs_commit Failed");
+        return err;
+    }
     nvs_close(my_handle);
     return ESP_OK;
 }
 
 int32_t config::readStorage(const char * storage_namespace, const char * key, void *data, size_t len) {
-    nvs_handle_t my_handle;
+    nvs_handle my_handle;
     esp_err_t err;
     err = config::initStorage();
-    if (err != ESP_OK) return err;
+    if (err != ESP_OK) {
+        Serial.println("InitStorage Failed");
+        return err;
+    }
     err = nvs_open(storage_namespace, NVS_READWRITE, &my_handle);
-    if (err != ESP_OK) return err;
+    if (err != ESP_OK) {
+        Serial.println("nvs_open Failed");
+        return err;
+    }
 
     size_t required_size = 0; 
     err = nvs_get_blob(my_handle, key, NULL, &required_size);
     if (err != ESP_OK && err != ESP_ERR_NVS_NOT_FOUND) {
+        Serial.println("nvs_get_blob Failed");
         return err;
     }
     // datafound of the correct size.
     if ( required_size == len) {
         err = nvs_get_blob(my_handle, key, data, &required_size);
-        if (err != ESP_OK) return err;
-    } 
+        if (err != ESP_OK) {
+            Serial.println("nvs_get_blob Failed");
+            return err;
+        }
+    } else {
+        Serial.println("Wrong size Failed");
+    }
     nvs_close(my_handle);
     return ESP_OK;
 }

@@ -2,8 +2,8 @@
 #include <configstorage.h>
 #include <cstdlib>
 
-#define STORAGE_NAMESPACE "windsensorconfig"
-#define STORAGE_KEY "config_v1.0"
+#define STORAGE_NAMESPACE "WindSensor"
+#define STORAGE_KEY "cf10" // config version 10, keynames need to be short
 
 #define CMD_HELP 0
 #define CMD_ANGLE_MAX_S 1
@@ -57,11 +57,13 @@ WindConfig::WindConfig(WindSensor * _windSensor, Stream * _io) {
     io = _io;
     windSensor = _windSensor;
     config = &(configBlob.config);
-    memcpy(config, &defaultWindSensorConfig, sizeof(WindSensorConfig));
-    load();
 }
 
 
+void WindConfig::begin() {
+    memcpy(config, &defaultWindSensorConfig, sizeof(WindSensorConfig));
+    load();
+}
 
 
 void WindConfig::help() {
@@ -81,7 +83,6 @@ void WindConfig::help() {
     io->println("actviate                  - Activates Current configuration");
     io->println("on                        - Enables diagnostic output");
     io->println("off                       - Disables diagnostic output");
-    io->print("$>");
 }
 
 void WindConfig::docmd(const char * command) {
@@ -137,6 +138,11 @@ void WindConfig::docmd(const char * command) {
         case CMD_SPEED_VALUES_S:  
             setSpeedValues(data);
             break;
+        default:
+            io->print(F("Command Not recognised:"));
+            io->println(command);
+            break;
+
     }
 }
 
@@ -145,6 +151,7 @@ void WindConfig::process() {
     if ( command != NULL ) {
         unitout("Processing"); unitout_ln(inputLine);
         docmd(command);
+        io->print("$>");
     }
 }
 
@@ -157,17 +164,18 @@ void WindConfig::dump() {
     io->println(buffer);
     sprintf(buffer,"Angle Direction %s", config->signCorrection==1?"normal":"reversed");
     io->println(buffer);
-    io->println("Angle Linerisation: angle, reading, offset");
+    io->println("Angle Linerisation Table:");
+    io->println("   angle, reading, offset");
     for (int i = 0; i < config->angleTableSize; i++) {
-        sprintf(buffer," %f,%d,%d", 360.0*(double)i/(double)config->angleTableSize, 4096*i/config->angleTableSize, config->angleTable[i]);
+        sprintf(buffer," %7.3f,%8d,%7d", 360.0*(double)i/(double)config->angleTableSize, 4096*i/config->angleTableSize, config->angleTable[i]);
         io->println(buffer);
     }
-    io->println("Speed Table: Pulse Hz, m/s");
+    io->println("Speed Table:");
+    io->println("      Hz,    m/s,     kn");
     for (int i = 0; i < config->speedTableSize; i++) {
-        sprintf(buffer," %f,%f", config->speedTable[i], config->speed[i]);
+        sprintf(buffer," %7.3f,%7.3f,%7.3f", config->speedTable[i], config->speed[i], config->speed[i]*1.94384);
         io->println(buffer);
     }
-    io->print("$>");
 }
 
 void WindConfig::setAngleMax(const char * data) {
@@ -206,8 +214,8 @@ void WindConfig::setAngleSize(const char * data) {
 }
 
 void WindConfig::setAngles(const char * data) {
-    int cell = -1, offset = 0;
-    const char * pstart = data;
+    int cell = -1;
+    char * pstart = (char *)data;
     char * pend = NULL;
     while(pstart != NULL && *pstart != '\0') {
         pend = NULL;
@@ -260,7 +268,7 @@ void WindConfig::activate() {
 void WindConfig::load() {
     // load from flash
     io->println("Do load");
-    int32_t err = config::writeStorage(STORAGE_NAMESPACE, STORAGE_KEY, configBlob.blob, sizeof(WindSensorConfig));
+    int32_t err = config::readStorage(STORAGE_NAMESPACE, STORAGE_KEY, configBlob.blob, sizeof(WindSensorConfig));
     if ( err != config::ok ) {
         io->print("Load Failed, err:");
         io->println(err);
@@ -280,21 +288,24 @@ bool WindConfig::isOutputEnabled() {
 
 
 int WindConfig::loadFloatTable(const char * data, int size, float * table) {
-    const char * pstart = data;
+    char * pstart = (char *)data;
     char * pend = NULL;
     int n = 0;
-    while(n < size && pstart != NULL && *pstart != '\0') {
+
+    while(n < size && pstart != NULL && *(pstart) != '\0' ) {
         pend = NULL;
         float d = strtof(pstart, &(pend));
         if ( *pend == ',') {
             pend++;
         }
         if ( pend != NULL ) {
-            table[n] = d;
+           io->printf("%d, %f\n",n,d);
+           table[n] = d;
             n++;
         }
         pstart = pend; 
     }
+    io->printf("Loaded %d\n",n);
     return n;
 }
 
@@ -322,6 +333,9 @@ char * WindConfig::readLine() {
 
     if ( b == '\n') {
       inputLine[bufferPos] = '\0';
+      if (bufferPos > 0 && inputLine[bufferPos-1] == '\r') {
+          inputLine[bufferPos-1] = '\0';
+      }
       bufferPos = 0;
       unitout("Got line"); unitout_ln(inputLine);
       return inputLine;

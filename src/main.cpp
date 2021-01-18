@@ -23,9 +23,12 @@
 
 const unsigned long TransmitMessages[] PROGMEM={130306L,0};
 
-Jdy40 * jdy40;
-WindSensor * windSensor;
-WindConfig * windConfig;
+Jdy40 jdy40(DATAEN_PIN);
+WindSensor windSensor;
+WindConfig windConfig(&windSensor,&Serial);
+
+#define INPUT_BUFFER_SIZE 1024
+char inputBuffer[INPUT_BUFFER_SIZE];
 
 
 void setup() {
@@ -37,19 +40,16 @@ void setup() {
 
   Serial1.begin(9600,SERIAL_8N1, RF_RX, RF_TX);
   
-  jdy40 = new Jdy40(DATAEN_PIN, 9600, &Serial1, &Serial);
-  jdy40->startConfig();
-  jdy40->init();
-  // Since this device will only perform bridging for 
-  // a wind sensor, and there is only 1 wind sensor
-  // onboard, we have not provided a configuration mechanism for this.
-  //
-  jdy40->setRFID("1021");
-  jdy40->setDeviceID("1123");
-  jdy40->setChannel("001");
+  jdy40.setInputBuffer(inputBuffer, INPUT_BUFFER_SIZE);
+  jdy40.setDebug(&Serial);
+  jdy40.begin(&Serial1, 9600);
+  jdy40.startConfig();
+  jdy40.init();
+  jdy40.setRFID(1021);
+  jdy40.setDeviceID(1123);
+  jdy40.setChannel(1);
 
-  windSensor = new WindSensor();
-  windConfig = new WindConfig(windSensor,&Serial);
+  windConfig.begin();
 
   // Setup NMEA2000
   // Set Product information
@@ -78,6 +78,7 @@ void setup() {
   NMEA2000.ExtendTransmitMessages(TransmitMessages);
   NMEA2000.Open();
 
+  
 
   Serial.println("Starting");
   
@@ -92,7 +93,7 @@ void SendN2kWind() {
   tN2kMsg N2kMsg;
 
   if ( WindUpdated+WindUpdatePeriod<millis() ) {
-    SetN2kWindSpeed(N2kMsg, 1, windSensor->getWindSpeed(), windSensor->getWindAngle() ,N2kWind_Apprent);
+    SetN2kWindSpeed(N2kMsg, 1, windSensor.getWindSpeed(), windSensor.getWindAngle() ,N2kWind_Apprent);
     WindUpdated=millis();
     NMEA2000.SendMsg(N2kMsg);
   }
@@ -102,7 +103,13 @@ void SendN2kWind() {
 
 void loop() {
   // read the serial data and process.
-  windSensor->processData(jdy40->readLine());
+  windConfig.process();
+  windSensor.processData(jdy40.readLine());
+  if ( windConfig.isOutputEnabled() ) {
+    NMEA2000.SetForwardStream(&Serial);
+  } else {
+    NMEA2000.SetForwardStream(0);
+  }
   // Send to N2K Bus
   SendN2kWind();
   NMEA2000.ParseMessages();

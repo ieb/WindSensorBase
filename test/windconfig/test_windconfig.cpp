@@ -13,6 +13,7 @@ void setUp(void) {
     ArduinoFakeReset();
     setupStream();
     windConfig = new WindConfig(&windSensor, io);
+    windConfig->begin();
 }
 
 void tearDown(void) {
