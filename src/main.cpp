@@ -15,33 +15,48 @@
 #include <NMEA2000_CAN.h> 
 #include <N2kMessages.h>
 
+
 #include <jdy40.h>
 #include <windsensor.h>
 #include <windconfig.h>
 
+#define BLUETOOTHCLASSIC 1
+#ifdef BLUETOOTHCLASSIC
+#include <BlueToothSerial.h>
+BluetoothSerial SerialBT;
+#define SerialIO SerialBT
+#else
+#define SerialIO Serial
+#endif
 
 
 const unsigned long TransmitMessages[] PROGMEM={130306L,0};
 
+
+
 Jdy40 jdy40(DATAEN_PIN);
 WindSensor windSensor;
-WindConfig windConfig(&windSensor,&Serial);
+WindConfig windConfig(&windSensor,&SerialIO);
 
 #define INPUT_BUFFER_SIZE 1024
 char inputBuffer[INPUT_BUFFER_SIZE];
 
 
 void setup() {
-  
-                               
-  Serial.begin(19200);
 
-  Serial.println("Confgiure JDY40");
+  
+#ifdef BLUETOOTHCLASSIC                               
+  SerialBT.begin("WindSensorBase"); 
+#else 
+  Serial.begin(115200);
+#endif
+
+  SerialIO.println("Confgiure JDY40");
 
   Serial1.begin(9600,SERIAL_8N1, RF_RX, RF_TX);
   
   jdy40.setInputBuffer(inputBuffer, INPUT_BUFFER_SIZE);
-  jdy40.setDebug(&Serial);
+  jdy40.setDebug(&SerialIO);
   jdy40.begin(&Serial1, 9600);
   jdy40.startConfig();
   jdy40.init();
@@ -67,7 +82,7 @@ void setup() {
                                );
 
   // debugging with no chips connected.
-  NMEA2000.SetForwardStream(&Serial);
+  NMEA2000.SetForwardStream(&SerialIO);
   NMEA2000.SetDebugMode(tNMEA2000::dm_ClearText);
   NMEA2000.SetForwardType(tNMEA2000::fwdt_Text); 
   NMEA2000.SetDebugMode(tNMEA2000::dm_ClearText); // Uncomment this, so you can test code without CAN bus chips on Arduino Mega
@@ -80,7 +95,7 @@ void setup() {
 
   
 
-  Serial.println("Starting");
+  SerialIO.println("Starting");
   
 }
 
@@ -106,7 +121,7 @@ void loop() {
   windConfig.process();
   windSensor.processData(jdy40.readLine());
   if ( windConfig.isOutputEnabled() ) {
-    NMEA2000.SetForwardStream(&Serial);
+    NMEA2000.SetForwardStream(&SerialIO);
   } else {
     NMEA2000.SetForwardStream(0);
   }
