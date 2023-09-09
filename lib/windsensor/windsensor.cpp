@@ -2,6 +2,17 @@
 #include "windsensor.h"
 
 
+#ifndef UNIT_TEST
+#include "esp_attr.h"
+#define debugf(args...) if ( debugOutput ) debugStream->printf(args)
+#else
+#define DRAM_ATTR
+#define IRAM_ATTR
+#define debugf(args...)
+ 
+#endif
+
+
 WindSensorConfig defaultWindSensorConfig = {
     .maxAngle = 4096, 
     .angleCorrection = 0, 
@@ -41,18 +52,37 @@ int WindSensor::csvParse(char * inputLine, uint16_t len, char * elements[]) {
   return n;
 }
 
-bool WindSensor::processData(char *inputLine) {
+void WindSensor::calcPackets() {
+  unsigned long readTime = millis();
+  if ( lastReadTime != 0 ) {
+    unsigned long readPeriod = readTime - lastReadTime;
+    if ( readPeriod > 100 ) {
+      if ( sumReadPeriod/readPeriod  > 66 ) {
+        // 20000/300 = 66, anything less than 1.5 packet lenghts is ok
+        sumReadPeriod = sumReadPeriod-(sumReadPeriod/100)+readPeriod;
+      } else {
+        // if a packet was dropped then dont adjust the expected period.
+        packetsDropped++;
+      }
+    }
+  }
+  packetsRead++;
+  lastReadTime = readTime;
+}
+
+bool WindSensor::processData(char *inputLine, bool debug) {
+  debugOutput = debug;
+  
   if ( inputLine == NULL ) {
-      return false;
+    return false;
   }
   uint16_t len = strlen(inputLine);
   if ( len == 0 ) {
     // ignore 
     return false;
   }
-  debugStream->println(len);
   inputLine[len] = '\0';
-  debugStream->println(inputLine);
+  //debugf("Input %d %s\n",len,inputLine);
   unitout_ln(inputLine);
   // slice into seperate strings by setting the ' to a \0 and storing the start of 
   // each string in a array
@@ -70,14 +100,11 @@ bool WindSensor::processData(char *inputLine) {
       int delayms = atoi(elements[7]);
       int edgescount = atoi(elements[8]);
       int calltime = atoi(elements[9]);
-      char buffer[128];
-      sprintf(buffer, "%ld,%d,%d,%d,%d,%ld,%f,%d,%d,%d,%d", 
+      debugf("%ld,%d,%d,%d,%d,%ld,%f,%d,%d,%d,%ld", 
               millis(),magnet,agc,magnitude,angle,
               period,
               windSpeed,
               delayms,edgescount,calltime, errors);
-      unitout_ln(buffer);
-      debugStream->println(buffer);
       updateWindAngle(angle);
       updateWindSpeed(windSpeed);
       return true;
@@ -86,29 +113,29 @@ bool WindSensor::processData(char *inputLine) {
       int magnet = atoi(elements[0]);
       int angle = atoi(elements[1]);
       float windSpeed = atof(elements[2]);
+      calcPackets();
       unitout("Magnet "); unitout(magnet);unitout(" Angle ");unitout(angle);unitout(" Windspeed ");unitout_ln(windSpeed);
-      char buffer[128];
-      sprintf(buffer, "%ld,%d,%d,%f,%d\r\n",
+      debugf("%ld,%d,%d,%f,%ld\r\n",
               millis(),magnet,angle,
               windSpeed,
               errors);
-      unitout_ln(buffer);
-      debugStream->println(buffer);
       updateWindAngle(angle);
       updateWindSpeed(windSpeed);
+      debugf("%ld,%d,%d,%f,%ld,%f,%f\r\n",
+              millis(),magnet,angle,
+              windSpeed,
+              errors, windAngleRad*360.0/(2.0*3.14159), windSpeedMS*1.94384);
       return true;
     } else {
       errors++;
-      char buffer[128];
-      sprintf(buffer, "ERROR Rejected (fields) %d %s \r\n", n, inputLine);
-      unitout(buffer);
-      debugStream->println(buffer);
+      debugf("ERROR Rejected (fields) %d %s \r\n", n, inputLine);
       return false;
     }
   }
 
 void WindSensor::calibrate(WindSensorConfig * _config) {
     config = _config;
+
 }
 
 
@@ -150,6 +177,15 @@ float WindSensor::updateWindSpeed(float windSpeed) {
     // between the last 2 cells. Straight line can be achieved with 2 entries, the first being 0 and the second being
     // the speed and a known frequency of pulses.
     // typically 5.5Hz == 1kn.
+    if ( windSpeed <= 0.03 ) {
+        windSpeedMS = 0;
+        return windSpeedMS;
+    }
+    if ( windSpeed < config->speedTable[0]) {
+            float factor = windSpeed/ config->speedTable[0];
+            windSpeedMS = factor*config->speed[0];
+            return windSpeedMS;
+    }
     for(int i = 1; i < config->speedTableSize; i++) {
         if  (windSpeed < config->speedTable[i] ) {
 
@@ -171,7 +207,19 @@ float WindSensor::getWindSpeed() {
 float WindSensor::getWindAngle() {
     return windAngleRad;
 }
-int WindSensor::getErrors() {
-    return errors;
+
+unsigned long WindSensor::getPacketsDropped() {
+  return packetsDropped;
 }
+unsigned long WindSensor::getPacketsRead() {
+  return packetsRead;
+}
+unsigned long WindSensor::getSumReadPeriod() {
+  return sumReadPeriod;
+}
+
+unsigned long WindSensor::getErrors() {
+  return errors;
+}
+
 

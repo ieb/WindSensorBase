@@ -34,20 +34,31 @@ class WindSensor {
     public:
       WindSensor(Stream * _debug = &Serial);
       void calibrate(WindSensorConfig * config);
-      bool processData(char *inputLine);
+      bool processData(char *inputLine, bool debug);
       float getWindSpeed();
       float getWindAngle();
+      unsigned long getPacketsDropped();
+      unsigned long getPacketsRead();
+      unsigned long getSumReadPeriod();
+      unsigned long getErrors();
+
       float updateWindAngle(int angle);
       float updateWindSpeed(float windSpeed);
 
-      int getErrors();
     private:
         int csvParse(char * inputLine, uint16_t len, char * elements[]);
+        void calcPackets();
+        unsigned long lastReadTime = 0;
+        unsigned long packetsDropped = 0;
+        unsigned long packetsRead = 0;
+        unsigned long sumReadPeriod = 20000; // configuration is 200ms between packets, see WindSensor loop().
         float windSpeedMS;
         float windAngleRad;
-        int errors;
+        unsigned long errors = 0;
+        bool debugOutput = false;
         WindSensorConfig *config;
         Stream * debugStream;
+
 };
 
 

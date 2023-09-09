@@ -5,28 +5,6 @@
 #define STORAGE_NAMESPACE "WindSensor"
 #define STORAGE_KEY "cf10" // config version 10, keynames need to be short
 
-#define CMD_HELP 0
-#define CMD_ANGLE_MAX_S 1
-#define CMD_ANGLE_MAX 2
-#define CMD_ANGLE_CORRECTION_S 3
-#define CMD_ANGLE_CORRECTION 4
-#define CMD_ANGLE_DIR_S 5
-#define CMD_ANGLE_DIR 6
-#define CMD_ANGLE_SIZE_S 7
-#define CMD_ANGLE_SIZE 8
-#define CMD_ANGLES_S 9
-#define CMD_ANGLES 10
-#define CMD_SPEED_TABLE_S 11
-#define CMD_SPEED_TABLE 12
-#define CMD_SPEED_VALUES_S 13
-#define CMD_SPEED_VALUES 14
-#define CMD_DUMP 15
-#define CMD_SAVE 16
-#define CMD_LOAD 17
-#define CMD_ACTIVATE 18
-#define CMD_ENABLE_OUTPUT 19
-#define CMD_DISABLE_OUTPUT 20
-#define NCOMMANDS 21
 
 static const char * windconfig_commands[] = {
     "help",
@@ -48,8 +26,10 @@ static const char * windconfig_commands[] = {
     "save",
     "load",
     "activate",
-    "on",
-    "off"
+    "mon",
+    "moff",
+    "status",
+    "btoff"
 };
 
 
@@ -63,13 +43,26 @@ WindConfig::WindConfig(WindSensor * _windSensor, Stream * _io) {
 void WindConfig::begin() {
     memcpy(config, &defaultWindSensorConfig, sizeof(WindSensorConfig));
     load();
+    activate();
 }
 
 
 void WindConfig::help() {
+    io->println("WindSensor Base Configuration");
     io->println("Lists of numbers should be comma seperated with no spaces.");
     io->println("Commands:");
     io->println("help|? - this help");
+    io->println("dump                      - Dumps the current configuration");
+    io->println("save                      - Saves the current configuration to non volatile storage.");
+    io->println("load                      - Loads configuration from no volatile storage");
+    io->println("reset                     - Factory reset");
+    io->println("actviate                  - Activates Current configuration");
+    io->println("mon                       - Enables sensor monitoring");
+    io->println("moff                      - Disables sensor monitoring");
+    io->println("status                    - output current status.");
+    io->println("btoff                     - switch bt off, will terminate connection.");    
+
+
     io->println("am|angle max <n>          - set maximum angle value, default in 4096");
     io->println("ac|angle correction <n>   - set maximum angle sensor raw offset offset, default 0");
     io->println("ad|angle dir <n>          - set maximum angle sensor rotation direction, 1 = normal, 0 = reversed");
@@ -77,23 +70,17 @@ void WindConfig::help() {
     io->println("a|angles <n>,<v>,<n1>,<v1> - set the angle calibrations, where n and v are ints. n = slot (0-slot), v = offset (+-)");
     io->println("st|speed table <n>,<n>    - Set the speed table up, where n is the puse frequency in Hz ");
     io->println("sv|speed values <n>,<n>   - Set the speed values up matching the speed table where n is the speed in m/s");
-    io->println("dump                      - Dumps the current configuration");
-    io->println("save                      - Saves the current configuration to non volatile storage.");
-    io->println("load                      - Loads configuration from no volatile storage");
-    io->println("actviate                  - Activates Current configuration");
-    io->println("on                        - Enables diagnostic output");
-    io->println("off                       - Disables diagnostic output");
 }
 
-void WindConfig::docmd(const char * command) {
+int8_t WindConfig::docmd(const char * command) {
     const char *data;
     int cid = match(command, windconfig_commands, NCOMMANDS, &data );
     switch(cid) {
-        case CMD_ENABLE_OUTPUT: 
-            enableOutput(true); 
+        case CMD_ENABLE_MON: 
+            enableMonitoring(true); 
             break;
-        case CMD_DISABLE_OUTPUT: 
-            enableOutput(false); 
+        case CMD_DISABLE_MON: 
+            enableMonitoring(false); 
             break;
         case CMD_ACTIVATE: 
             activate(); 
@@ -138,19 +125,24 @@ void WindConfig::docmd(const char * command) {
         case CMD_SPEED_VALUES_S:  
             setSpeedValues(data);
             break;
+        case CMD_STATUS:
+        case CMD_BT_OFF:
+            // handled by callback
+            break;
         default:
             io->print(F("Command Not recognised:"));
             io->println(command);
             break;
-
     }
+    return cid;
 }
 
-void WindConfig::process() {
+
+void WindConfig::process(void cb(int8_t)) {
     char * command = readLine();
     if ( command != NULL ) {
         unitout("Processing"); unitout_ln(inputLine);
-        docmd(command);
+        cb(docmd(command));
         io->print("$>");
     }
 }
@@ -277,13 +269,15 @@ void WindConfig::load() {
     }
 }
 
-void WindConfig::enableOutput(bool enable) {
-    outputOn = enable;
+void WindConfig::enableMonitoring(bool enable) {
+    monitoringOn = enable;
+    io->printf("Monitoring enabled %d\n",monitoringOn);
 }
 
-bool WindConfig::isOutputEnabled() {
-    return outputOn;
+bool WindConfig::isMonitoringEnabled() {
+    return monitoringOn;
 }
+
 
 
 
